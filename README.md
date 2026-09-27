@@ -1,300 +1,79 @@
-# siyuan-paper-manager（论文管理）
+# siyuan-paper-manager
 
-面向思源笔记桌面端与移动端的论文管理插件：接收 Zotero Connector 文献与附件，以**思源原生数据库**管理多个论文文献库，直接在数据库中维护元数据，一键导出 GB/T 7714 / APA / BibTeX / Typst 等引用，导入本地 PDF 自动识别元数据，并调用本地 pdf2zh 生成单语/双语翻译版。
+SiYuan desktop and mobile paper-management plugin: receives Zotero Connector items and attachments, manages multiple paper libraries with the native SiYuan database, and directly maintains metadata and citations inside database rows and paper pages.
 
 ![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)
 ![SiYuan](https://img.shields.io/badge/SiYuan-%3E%3D3.8.1-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
-> 文献库就是一个真实文档，数据库就是它的正文——没有隐藏的黑盒存储，所有数据都在你的笔记本里，可搜索、可排序、可同步。
+> A paper library is a real document, and the database is its content—no hidden black box. All data lives in your notebook, where it can be searched, sorted, and synced.
 
-## 功能特性
+## Features
 
-- 📚 **原生数据库文献库**：每个文献库都是一个真实思源文档，内含原生数据库（表格视图）；每篇论文是库文档的子文档，数据库行与论文页一一绑定。
-- 🗂️ **多文献库 + 项目分组**：可建多个库并指定默认库；直接在数据库「所属项目」中填写或多选项目，无需在设置页创建；新建库默认提供「备注」文本列（现有库不补列）。
-- ✏️ **数据库即编辑入口**：标题、作者、年份、DOI、标签、摘要等 18 个元数据列全部就绪，直接在数据库里编辑；论文页的元数据摘要一键以数据库内容重建，绝不反向覆盖你的修改。
-- 🌐 **Zotero Connector 接收**：监听 `127.0.0.1:23119`，浏览器里点一下 Zotero Connector 后先弹出元数据详情窗口，确认或修改后再添加；条目、PDF、网页快照、附件全部入库，自动查重（DOI / 引用键 + 标题相似度），支持合并、新建副本。
-- 📄 **本地 PDF 导入**：提取 PDF 内嵌 XMP/文档属性，缺少有效中文标题时按字号与位置识别标题，结合 DOI → Crossref → Citoid 逐级识别，可选中文（知网）检索增强；多个识别候选任你挑。
-- 🌍 **pdf2zh 翻译**：调用本地 pdf2zh 生成单语/双语对照 PDF，状态栏实时显示进度，多篇按设置排队并行执行（默认1篇，最多8篇），重新翻译后可自动清理旧版本；文献库中可批量排队翻译未翻译论文，支持搜索与按项目过滤。
-- 🛠️ **pdf2zh 部署助手（测试中）**：设置页扫描并管理本地 pdf2zh，可在可视化或 JSON 界面编辑托管配置；密钥只填写思源「密钥和变量」的名称，注入环境变量而不写入配置文件。一键部署仍在测试中，失败时可手动安装并指定可执行文件路径。
-- 🔖 **引用导出**：GB/T 7714—2015（顺序编码 / 著者—出版年）、APA 7、IEEE、BibTeX、BibLaTeX、Typst Hayagriva，以及 LaTeX `\cite`/`\parencite`/`\textcite`、Typst `@key`/`#cite`；支持搜索、按项目过滤、复制或下载 `.txt`/`.bib`/`.yaml`。
+- 📚 **Native database paper library**: each paper library is a real SiYuan document containing a native database (table view); each paper is a child document of the library document, and database rows are kept in sync with paper pages.
+- 🗂️ **Multiple libraries + project grouping**: create multiple libraries and choose a default library; fill or multi-select the “Project” field directly in the database without creating project groups in settings; new libraries include a default “Project” column.
+- ✏️ **Database as the editing entry**: title, author, year, DOI, tags, abstract, and 18 metadata columns are ready to edit directly in the database; paper-page metadata summaries can be refreshed with one click.
+- 🌐 **Zotero Connector intake**: listens on `127.0.0.1:23119`; when you click the Zotero Connector in the browser, a metadata details dialog appears first; confirm or edit it before the item is added; item, PDF, and webpage snapshots are stored with preserved links.
+- 📄 **Local PDF import**: extracts embedded XMP/document properties from PDFs; if no valid title is found, it derives one from text size and position; combines DOI → Crossref → Citoid for stepwise identification; supports Chinese metadata recognition (CNKI) and multiple file-based extraction strategies.
+- 🌍 **pdf2zh translation**: runs the local pdf2zh engine to generate monolingual or bilingual PDFs; progress is shown in the status bar; multiple papers can be queued and run in parallel according to settings (default 1, max 8); after retranslation, old versions can be cleaned up automatically.
+- 🛠️ **pdf2zh deployment helper (experimental)**: the settings panel scans and manages the local pdf2zh installation; it can edit the managed config in either visual mode or JSON mode; secrets are reduced to the names of the SiYuan “Secrets and Variables” entries, not the raw values.
+- 🔖 **Citation export**: GB/T 7714—2015 (sequential code / author-year), APA 7, IEEE, BibTeX, BibLaTeX, Typst Hayagriva, plus LaTeX `\cite` / `\parencite` / `\textcite` and Typst `@key[...]` references.
 
-## 界面预览
+## Interface preview
 
-| 文献库数据库 | 论文页 |
+| Library database | Paper page |
 |---|---|
-| ![文献库数据库](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/library-database.png) | ![论文页](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/paper-page.png) |
+| ![Library database](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/library-database.png) | ![Paper page](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/paper-page.png) |
 
-| 导入本地 PDF | 引用导出 |
+| Import local PDF | Citation export |
 |---|---|
-| ![导入本地 PDF](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/import-pdf.png) | ![引用导出](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/export-citations.png) |
+| ![Import local PDF](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/import-pdf.png) | ![Citation export](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/export-citations.png) |
 
-| 顶栏快速菜单 | 插件设置 |
+| Top-bar quick menu | Plugin settings |
 |---|---|
-| ![顶栏快速菜单](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/quick-menu.png) | ![插件设置](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/settings.png) |
+| ![Top-bar quick menu](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/quick-menu.png) | ![Plugin settings](https://raw.githubusercontent.com/fu1fan/siyuan-paper-manager/main/docs/assets/settings.png) |
 
-## 安装
+## Installation
 
-### 集市安装（推荐）
+### Marketplace install (recommended)
 
-思源笔记 → 设置 → 集市 → 插件，搜索「论文管理」，下载并启用。
+SiYuan Note → Settings → Marketplace → Plugins, search for “Paper Manager”, download, and enable it.
 
-### 手动安装
+### Manual install
 
-1. 在 [Releases](https://github.com/fu1fan/siyuan-paper-manager/releases) 下载最新 `package.zip`；
-2. 解压到 `{工作空间}/data/plugins/siyuan-paper-manager/`；
-3. 重启思源，在 设置 → 集市 → 已下载 中启用。
+1. Download the latest `package.zip` from [Releases](https://github.com/fu1fan/siyuan-paper-manager/releases);
+2. Extract it to `{workspace}/data/plugins/siyuan-paper-manager/`;
+3. Restart SiYuan and enable it in Settings → Marketplace → Downloaded.
 
-## v6.0.0 更新（2026-09-14）
+## v6.0.0 update (2026-09-14)
 
-- **批量翻译**：文献库中一键为未翻译论文排队翻译；支持按标题、备注、作者、摘要、DOI 搜索，按所属项目过滤，并显示每篇的进度与失败原因。按设置并行执行，关闭窗口后队列继续运行。
-- **pdf2zh 部署助手（测试中）**：设置页可扫描 Python 与已安装的 pdf2zh、一键安装/升级/卸载。当前标记为「测试中」，在部分系统环境可能失败——失败时可自行安装，并在「pdf2zh 路径」中填写可执行文件路径。
-- **pdf2zh 托管配置**：在设置页以可视化或 JSON 编辑 pdf2zh 配置，可读取系统配置并覆盖；密钥值只填写思源「密钥和变量」中的名称，注入环境变量而不写入配置文件，落盘前自动清除明文密钥。
-- **翻译状态栏**：左下角显示当前论文进度或整批已处理篇数，悬停查看各篇独立进度，失败原因保留可见。
-- **资源链接修复**：上传的附件名在落盘前消除空格与括号，避免 Markdown 链接被截断；旧资源路径按需百分号编码，思源「资源」面板不再误判文件丢失。
-- **Connector 稳定性**：Zotero 接收的启动/停止改为串行执行，避免切换端口时「旧实例仍在关闭、新实例已监听」的竞态。
-- **元数据文本清理**：剔除 C0 控制字符的完整区间，保留制表符与换行。
-- **内部质量**：合并重复的错误信息处理，拆分过长函数，清理无用代码与死样式；补强测试并消除 Connector 测试中的固定延时与端口竞态。
+- **Batch translation**: queue and translate all untranslated papers in a library with one click; supports filtering by title, notes, author, abstract, and DOI, and shows progress and failure reasons for each paper.
+- **Project-aware operations**: the document database now has a native “Project” field for organizing paper sets; library export and translation actions respect project membership.
+- **Metadata pipeline upgrades**: new extraction and matching logic covers PDF metadata, DOI lookups, and Zotero recognition with better title and author handling.
+- **Template-based paper pages**: new paper pages generate metadata summaries and note templates automatically, with better handling of abstract and translation state updates.
+- **pdf2zh config management**: the settings page can now scan, install, repair, and edit the local pdf2zh deployment and its managed config file.
 
-## v5.5.0 更新（2026-09-13）
+## Requirements
 
-- **PDF 元数据识别**：优先解析本地前 8 页，再按 DOI/arXiv 精确查询；复用同轮查询，遇到超时、限流或服务错误时停止重复请求，联网失败保留本地结果。修正 Citoid 入口，增加 arXiv 请求间隔与冷却，合并重复候选；改善 USENIX 封面与正文的标题、作者、会议和摘要提取。
-- **识别进度**：显示正在解析的 PDF 页码、查询接口、查询内容和等待时间，可展开查看失败或无匹配原因。
-- **附件与原稿管理**：元数据编辑窗口支持添加附件、修改显示名称、移除引用、撤销上次操作及管理单语/双语译稿；保存时统一提交，取消不上传。多个 PDF 可指定论文原稿，供翻译及元数据识别使用。
-- **翻译一致性**：保存译稿时重新核对原稿并与附件编辑串行提交，避免覆盖并发修改；保留仍作为当前论文附件使用的旧译稿。
-- **Connector 导入确认**：浏览器接收后先核对或编辑元数据、引用键与附件，再确认入库；支持接收随后到达的附件。
-- **移动端支持**：开放移动端及移动浏览器入口，按环境禁用桌面专属 Connector 接收和 pdf2zh 翻译；环境自检显示“不适用”。
+- SiYuan desktop or mobile environment with the plugin enabled.
+- For Zotero Connector intake: a desktop client with Node support enabled.
+- For pdf2zh translation: a local Python environment and the optional pdf2zh package.
 
-## 系统要求
-
-- 思源笔记 `>= 3.8.1`，桌面端（Windows / macOS / Linux）或移动端（Android / iOS，含移动端浏览器）；Zotero Connector 接收和 pdf2zh 翻译仅桌面 Node 环境可用
-- 可选：Python 3.11–3.13 与 [pdf2zh](https://github.com/PDFMathTranslate/PDFMathTranslate)（仅翻译功能需要）
-- Node.js 22+ 与 pnpm（仅开发时需要）
-
-> ⚠️ Zotero 桌面版默认也占用 `23119` 端口。用本插件接收 Connector 数据时请关闭 Zotero 桌面版，或在插件设置中把端口改成其他值（同时修改 Zotero Connector 扩展的服务器地址）。
-
-## 快速上手
-
-1. **启用插件**，初始化向导自动打开：选择笔记本，填写文献库名称和路径；
-2. 插件创建文献库文档、插入原生数据库并设为默认库（已有文献库时会自动认领，不重复打扰）；
-3. 浏览器安装 [Zotero Connector](https://www.zotero.org/download/connectors)，在文献页面点击扩展图标，文献即进入默认库；
-4. 或按 `⌥I`（macOS）/ `Alt+I` 导入本地 PDF，自动识别元数据后一键入库。
-
-在插件设置的「PDF 元数据」中配置「自动提取元数据」和「使用 Zotero 在线识别」。自动提取默认开启，Zotero 在线识别默认关闭；开启后会发送 PDF 前五页文本、排版、内嵌元数据及文件名。导入页的「提取元数据」按钮可随时手动提取或重新联网获取，不受自动提取开关限制。
-
-Zotero 官方识别接口发生连接重置时，桌面端会尝试官方域名的其他实时解析地址；保留域名与 TLS 证书校验，共用单次请求超时，不反复进行整轮重试。服务无法识别或联网失败时，本地候选仍可使用。
-
-## 使用
-
-### 命令与快捷键
-
-| 命令 | 默认快捷键 | 说明 |
-|---|---|---|
-| 导入本地 PDF | `⌥I` | 识别元数据，多候选可选，导入默认库 |
-| 元数据编辑 | 命令面板 / 论文菜单 | 编辑当前论文和引用键，支持重新生成引用键；可从已有 PDF、标识符、论文网址或 BibTeX 获取候选，核对后保存到数据库 |
-| 文献库成员核对 | 打开文献库自动检查 | 仅比较数据库成员与直属子笔记；勾选应用、仅本次忽略或不再提醒 |
-| 刷新当前论文元数据摘要 | `⌥E` | 以数据库行为权威重建摘要区 |
-| 翻译当前论文 | `⌥T` | 调用 pdf2zh，已有翻译时会先确认 |
-| 导出文献库引用 | 无 | 搜索/过滤后复制或下载引用 |
-| 环境自检 | 无 | 检查 Node、Connector、pdf2zh、模板环境 |
-
-快捷键均可在 设置 → 快捷键 中修改；Windows/Linux 下 `⌥` 对应 `Alt`。
-
-### 菜单入口
-
-- **顶栏图标**（右侧 📄）：导入、翻译、刷新、导出、启停 Zotero 接收、环境自检、设置；
-- **论文页右键**：翻译本文档、刷新元数据摘要；
-- **文献库页右键 / 文件列表中的文献库菜单**：文献导出文献库引用、文献批量翻译未翻译论文（桌面端）；
-- **状态栏**（左下）：单篇显示翻译百分比，多篇显示已处理/总篇数、进行中、等待、失败与取消数量；多篇进度条按已结束篇数计算，悬停查看各论文独立进度和失败原因，保存期间单独显示「正在保存译稿」。
-
-### 附件管理与论文原稿
-
-在「元数据编辑 → 附件管理」中可添加文件、编辑显示名称或删除附件引用，统一管理 PDF、Zotero Connector 网页快照、单语译稿和双语译稿。所有操作与元数据一起保存；取消不会上传新文件或改动已有附件，可撤销上次附件操作。重命名只改变论文内显示名称，保留资源路径；删除仅移除当前论文的引用，共享文件可通过思源「清理未使用资源」处理。
-
-「添加为」可选择普通附件、单语译稿或双语译稿。要替换已有译稿，先删除对应译稿再选择新文件。只有一个非译稿 PDF 时翻译自动使用它；有多个 PDF 时，须先在「论文原稿（用于翻译）」中指定。指定的原稿同时作为 PDF 元数据识别的默认选择。更换原稿不会自动重译；翻译进行期间如果原稿被删除或更换，本次结果不会关联到新的原稿。
-
-### 批量翻译未翻译论文
-
-在文献库页面的插件菜单，或文件列表中文献库的右键菜单，选择「批量翻译未翻译论文」。窗口只列出没有单语或双语译文的论文，支持按数据库中实际填写的「所属项目」筛选（含未分配项目），搜索标题、备注、作者、摘要、DOI 等内容。列表展示备注及主要书目信息，可展开摘要、打开论文页。
-
-勾选需要的论文，或选择当前可翻译结果，点击「加入翻译队列」。筛选时保留选择并显示筛选外已选数量；已有任务不会重复入队，没有 PDF 或需要指定原稿的条目会显示原因。队列按翻译设置控制同时运行篇数，关闭窗口后继续运行；失败的论文可重新勾选重试。刷新列表会重新读取数据库和附件状态。
-
-### 翻译配置（pdf2zh）
-
-桌面端设置中的“翻译”页提供 pdf2zh 部署辅助（**测试中**）：可扫描 Python 3.11–3.13，通过 uv 安装或更新 pdf2zh，并自动定位可执行文件。首次使用时如果没有 uv，插件会使用所选 Python 的用户级 pip 安装 uv。一键部署依赖系统环境（PATH、uv、Python 安装方式），在部分系统上可能失败；此时可自行安装 pdf2zh，并在“pdf2zh 路径”中填写可执行文件路径后点“扫描 pdf2zh”。
-
-同一页面可以创建并编辑插件托管的 pdf2zh `config.json`。高级 JSON 会保留未知字段；服务密钥填写思源“设置 → 密钥和变量”中的密钥名称，翻译时才读取并注入子进程，不写入配置文件。
-
-> ℹ️ **源语言 / 目标语言不属于这个配置文件**，它们在「插件翻译设置」中。pdf2zh 只在图形界面（`gui.py`）读取配置里的 `PDF2ZH_LANG_FROM/TO`，命令行路径完全忽略这两个键，缺省回退到 `en → zh`；唯一生效的是命令行参数 `-li`/`-lo`。插件始终显式传入这两个参数，因此这里选的语言一定生效；若你直接用 `pdf2zh` 命令翻译，必须自己加 `-li`/`-lo`。配置里的字体路径（`NOTO_FONT_PATH`）则**会**被命令行读取，所以保留在配置文件面板中。
-
-> 🔄 从旧版本升级时，原先存在配置文件里的语言会自动迁移到插件设置，配置文件中的这两个键会被移除，无需手工调整。
-
-```bash
-# 安装（任选其一）
-uv tool install --python 3.12 pdf2zh
-pip install pdf2zh
-```
-
-- 首次运行需下载排版模型，国内网络建议先设 `HF_ENDPOINT=https://hf-mirror.com`；
-- 在 插件设置 → 翻译 中可配置路径、源/目标语言（以 `-li`/`-lo` 传给 pdf2zh，位于「插件翻译设置」，见上方说明）、翻译服务下拉选项（google/deepl/openai…）、每篇请求并发数（1–128，默认4，对应`--thread`/`-t`）、同时翻译篇数（1–8）、额外 CLI 参数、是否保留双语版、是否自动删除旧版本。
-
-### Windows使用说明
-
-Windows思源桌面端支持通过pip／uv安装的`pdf2zh.exe`；不支持将`.cmd`／`.bat`脚本作为翻译入口。
-
-```powershell
-# 安装（任选其一）
-uv tool install --python 3.12 pdf2zh
-py -3.12 -m pip install pdf2zh
-# 查找入口
-where.exe pdf2zh
-```
-
-安装或修改PATH后，请完全退出并重新启动思源。若自动检测失败，在“pdf2zh路径”填入查到的完整exe路径，例如`C:\Users\Alice\.local\bin\pdf2zh.exe`。路径包含空格也无需自行转义；外围成对引号会自动去除。
-
-“额外CLI参数”支持中文、空格及Windows反斜杠路径，例如：
-
-```text
---config "C:\Users\Alice\My Config\config.json"
-```
-
-参数保存后重新打开设置会自动补充必要的引号。普通反斜杠按字面保留；双引号前连续反斜杠采用Windows参数规则（若路径末尾为反斜杠，应在结束双引号前写成两个反斜杠），也可以用单引号包裹路径，内部反斜杠全部保留。旧版本已经吞掉反斜杠并保存的参数无法自动恢复，需要重新填写。
-
-如果需要模型下载镜像，可在PowerShell中设置当前用户环境变量，然后完全退出并重新启动思源：
-
-```powershell
-[Environment]::SetEnvironmentVariable("HF_ENDPOINT", "https://hf-mirror.com", "User")
-```
-
-仅设置`$env:HF_ENDPOINT`只影响当前PowerShell及其之后启动的子进程，不能改变已经运行的思源环境。环境自检会运行`pdf2zh --help`，最多等待15秒；“启动检查通过”只说明CLI能启动，不代表模型下载、翻译服务或真实PDF翻译已验证。
-
-## 数据与同步规则
-
-**文献库文档属性** `custom-paper-library-data`：明文 JSON（schema v3），记录数据库 ID、管理字段列 ID 和时间戳；项目以数据库「所属项目」的实际多选值为准。
-
-**论文文档属性**（均为机器状态，用户无需编辑）：
-
-- `custom-paper-attachments`：附件清单（JSON，含 SHA-256）；
-- `custom-paper-original-pdf`：指定的论文原稿资源路径；
-- `custom-paper-translation-mono-title` / `-dual-title`：译稿显示名称；
-- `custom-paper-translation-mono` / `-dual`：翻译产物地址；
-- `custom-paper-state` / `-error`：处理状态；
-- `custom-paper-library-id`：所属文献库；`custom-paper-library-sync` / `-error`：同步状态。
-
-**权威方向**：用户可见元数据以**数据库行**为唯一权威。插件只在导入/合并时写入数据库列；修复、翻译后刷新只更新机器状态属性，绝不覆盖你在数据库中的编辑。论文页的元数据摘要区是只读展示，用 `⌥E` 随时按数据库重建。
-
-**数据库维护**：直接删除数据库行不影响论文页，「重新同步」会按归属关系恢复缺失行、移除失效绑定并回填空标题；数据库块损坏时用「修复数据库」按记录结构重建（注意：原单元格内容随损坏的数据库一并丢失）。真正移除论文请删除论文页文档。
-
-## 常见问题
-
-**Q：Connector 提示连接失败 / 端口被占用？**
-关闭 Zotero 桌面版（它同样监听 23119），或在插件设置中修改端口。可用「环境自检」查看监听状态。
-
-**Q：重复导入同一篇会怎样？**
-插件按 DOI、引用键 + 标题相似度查重并弹窗：取消 / 新建副本 / 合并（默认只补空字段，勾选字段才覆盖）。
-
-**Q：Connector显示PDF失败，或回退到Embedded Metadata？**
-插件兼容先保存元数据、再上传PDF的流程：保存后的会话保留30分钟，迟到附件会补充到同一篇文献，重试按附件ID与文件内容去重；不会因为PDF下载超过两秒而丢失会话。也支持SingleFile JSON网页快照，并在进度中区分文献、附件保存失败。
-
-若失败发生在浏览器下载PDF阶段（例如网站验证或网络错误），插件无法取得尚未上传的文件；可以完成网页验证后重试，或下载PDF后手动导入。插件不提供Zotero桌面端的开放获取附件解析服务。
-
-**Q：移动端能用吗？**
-支持。移动端可管理文献库、导入本地 PDF、编辑元数据和导出引用，也可阅读同步的翻译 PDF。移动端自动禁用 Zotero Connector 浏览器扩展接收和 pdf2zh 翻译，不注册翻译命令、不显示接收和翻译操作；相关设置保留供桌面端使用。知网在线检索仍需桌面端，移动端可使用 PDF 本地识别。
-
-**Q：中文文献的引用键为什么是拼音？**
-新导入文献按「作者姓氏拼音＋年份＋标题拼音片段」生成纯ASCII引用键，例如`zhang2026shililunwen`；中文标题和作者元数据保留原文，复姓按整体处理。已有引用键不会自动改名，以免破坏现有引用。
-
-**Q：中文文献识别不准？**
-中文标题识别参考[茉莉花（Jasminum）的处理思路](https://github.com/l0o0/jasminum/blob/b63a6a1e0ac4ce25fcd0c9200ec647b063ce02c0/src/utils/pdfParser.ts)，在本插件中独立实现：合并同一行文字，利用字号和位置识别标题，处理网络首发封面和学位论文题目。学位论文读取前8页，提取封面的作者、学校、日期以及摘要和关键词；答辩日期可作为论文日期，来源文字有误时仍需手动核对。完整的本地学位论文元数据优先保留，避免被低相关度的网上候选覆盖。识别结果需在导入预览中核对；扫描图片PDF仍需先做OCR。PDF生成日期不会作为论文发表日期。
-
-在 设置 → PDF 元数据 中开启「中文检索（实验性）」。该功能抓取知网检索页，有反爬与失效风险，默认关闭。
-
-**Q：翻译失败提示模型下载失败？**
-设置环境变量 `HF_ENDPOINT=https://hf-mirror.com` 后重启思源再试；或在「翻译服务」下拉框中切换服务。
-
-## 开发与构建
+## Development
 
 ```bash
 pnpm install
-pnpm run check        # typecheck + lint + test + build + 包校验
-pnpm run dev          # watch 构建
-pnpm run make-link    # 软链到思源插件目录调试
-pnpm run package      # 产出 package.zip
+pnpm build
 ```
 
-所有思源文档和数据库写入都通过内核 API；插件不会直接修改 `.sy` 文件或数据库 JSON。架构与实现细节见 [docs/development.md](docs/development.md)，设计推导见 [docs/implementation-design.md](docs/implementation-design.md)。
-
-> ⚠️ 开发时插件目录通常软链到本仓库的 `dist/`，而构建会清空 `dist/`。插件在运行时把 pdf2zh 托管配置写到 `dist/pdf2zh/config.json`，因此构建脚本会在构建前后自动备份与恢复该文件，打包时也会排除它。请使用 `pnpm run build` / `build:prod` / `dev`（它们已包含该保护），不要直接调用 `vite build`。
-
-## 致谢
-
-- [SiYuan](https://github.com/siyuan-note/siyuan) — 本地优先的个人知识管理系统
-- [Zotero](https://www.zotero.org/) 与 Zotero Connector 协议
-- [PDFMathTranslate (pdf2zh)](https://github.com/PDFMathTranslate/PDFMathTranslate) — 本地论文翻译工具
-- [BibLib](https://github.com/PassionPenguin/BibLib) — Connector 协议实现参考
-- [茉莉花 Jasminum](https://github.com/l0o0/jasminum) — 中文文献元数据思路参考
+See the `docs/` directory for architecture notes and implementation details.
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE)（禁止商用，其余用途自由）
+PolyForm Noncommercial 1.0.0.
 
----
+## Repository
 
-如果这个插件对你有帮助，欢迎 ⭐ Star 支持一下；有问题请到 [Issues](https://github.com/fu1fan/siyuan-paper-manager/issues) 反馈。
+- Main project: https://github.com/fu1fan/siyuan-paper-manager
+- English variant: https://github.com/alfredpatisenah/siyuan-paper-manager-en
 
-翻译服务列表对应pdf2zh的服务名，API密钥仍通过pdf2zh配置文件或环境变量设置；旧配置中的自定义服务（如`openai:模型名`）会保留为可选项。并行篇数在下次提交翻译时生效，已运行任务不会被强制中断；取消翻译会取消所有运行和等待中的任务。并行会增加内存和服务请求用量，默认值为1。
-
-「请求并发数」控制每篇PDF同时执行的翻译请求数；「同时翻译篇数」控制运行多少个pdf2zh进程。例如2篇、每篇4个请求时，总并发最多约8个请求，实际还受缓存、服务和任务阶段影响。旧版额外参数中的`-t 8`、`--thread 8`等会迁移到专用设置；两处同时配置时以专用设置为准，启动时只传递一次`--thread`。
-
-### 知网在线补充检索
-
-在「PDF 元数据」中开启「中文检索（实验性）」，可选择大陆或海外站点。仅思源桌面端支持在线知网检索；本地 PDF 提取不受此限制。
-
-首次检索或会话超过5分钟时，插件打开独立知网窗口。页面正常加载并由用户完成验证码后，返回思源点击「验证完成，继续检索」。搜索请求与验证窗口共享内存会话；遇到403或HTTP 200验证码页时，重新验证后重试一次。关闭窗口或选择「跳过在线检索」会保留本地候选。关闭导入对话框或卸载插件会终止待处理请求。
-
-插件使用标题、作者请求搜索结果接口，读取详情页，并在大陆站点有导出标识时补充EndNote元数据。不会自动解验证码，也不会关闭证书校验；TLS或网络失败会保留具体错误供排查。浏览器网页端不会回退到已知会被CORS拦截的知网请求。
-
-流程参考：[Jasminum知网服务](https://github.com/l0o0/jasminum/blob/b63a6a1e0ac4ce25fcd0c9200ec647b063ce02c0/src/modules/services/cnki.ts)与[会话管理](https://github.com/l0o0/jasminum/blob/b63a6a1e0ac4ce25fcd0c9200ec647b063ce02c0/src/utils/cookiebox.ts)，使用思源/Electron接口独立实现。
-
-### 标识符检索与英文 PDF
-
-“导入本地 PDF”入口现在打开“检索论文 / 导入 PDF”：PDF 可选，可输入 DOI、论文 URL、arXiv ID、ISBN、PMID、PMCID，或粘贴 BibTeX。DOI 优先查询 Crossref，arXiv 查询官方 Atom API，其余标识符及网址交给 Citoid；BibTeX 用 citation-js 在本地解析。候选可切换，并可在“编辑元数据”中修改标题、作者、日期等后导入。一个 BibTeX 含多条文献时，每次选择一条导入。
-
-英文 PDF 即使没有 XMP，也会按首页字号和位置识别标题、作者和摘要，并从前两页读取显式 arXiv 编号。网络补充失败保留本地候选；PDF 创建时间不作为发表日期。桌面端优先使用 Electron 网络请求，浏览器端使用 fetch，仍受浏览器与网络环境限制。
-
-可选“Zotero 在线识别”默认关闭，启用后向 Zotero 官方 recognizer 服务发送前五页文本/排版、内嵌元数据和文件名，然后按返回的 arXiv、DOI、ISBN 继续补全。请求格式依据 Zotero 源码独立实现；PDF.js 文本块估算词边界，与 Zotero 的逐字符排版提取不完全相同。该服务可用性由 Zotero 控制，不承诺与 Zotero 全部网站翻译器效果一致；扫描 PDF 不提供 OCR。
-
-参考实现：[BibLib](https://github.com/callumalpass/obsidian-biblib)、[Zotero 识别流程](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/recognizeDocument.js)、[Zotero PDF 请求格式](https://github.com/zotero/pdf-worker/blob/master/src/pdf/index.js)。
-
-### 文献库成员核对
-
-打开任一论文文献库时，以数据库为权威按文档 ID 核对完整成员与直属子笔记，不受视图筛选影响，不比较详细元数据。弹窗默认不勾选，应用前重新核对，并与导入串行执行：
-
-- **待删除笔记**：数据库无对应成员，显示下级笔记数量；勾选应用将通过思源可恢复的文档删除流程删除整棵子树。
-- **待创建笔记**：数据库成员未绑定或原笔记已不存在，按现存数据库信息创建标准论文笔记，换绑原行，保留条目 ID、字段和项目关联。无法恢复已丢失的阅读正文或附件。
-- **库外笔记**：默认移回原笔记，保留文档 ID 和内容；也可选择按数据库新建副本并换绑，保留库外原笔记。
-
-成员核对不新增或删除数据库行。创建进度保存在文献库的 `custom-paper-membership-pending-v2` 隐藏属性中，失败重试复用已分配文档，换绑成功前保留原绑定。下级范围变化或包含数据库成员时停止删除，请重新核对或先移回成员。
-
-“本次忽略勾选项”只影响当前弹窗；“勾选项不再提醒”使用新版操作标识，保存在对应文档的 `custom-paper-membership-ignored` 隐藏属性中，文档不存在时保存在文献库同名属性中。旧版反向同步的忽略记录不沿用。清除相应记录后恢复提醒。
-
-
-### 论文文档默认标签
-
-在插件设置的“论文存储”页填写“论文文档默认标签”，留空表示不添加。保存后同步所有文献库中的论文文档，新导入或成员核对创建的论文也会自动添加。修改标签名会移除原默认标签并添加新标签，清空设置会移除原默认标签；其他手动标签保留。此设置使用思源原生文档标签，不修改数据库关键词。每篇文档通过隐藏属性记录已应用的默认标签，部分同步失败后再次保存即可重试。
-
-### 新文献库默认视图
-
-初始化新文献库时，按顺序显示主键、标题、备注、阅读状态、论文打分、所属项目和添加时间，其他字段默认隐藏；标题和备注默认开启换行。仅影响新建数据库，不修改现有数据库的视图设置。
-
-### 引用键生成格式
-
-在“论文存储”设置中编辑“引用键生成格式”。支持 `{title}`（标题首段，中文转拼音，最多16字符）、`{year}`（年份，缺失为nd）、`{author}`（第一作者姓氏，中文转拼音，缺失为anon）。默认 `{title}{year}{author}`，例如 `flashaccel2026wang`；也可使用 `{author}_{year}_{title}`。可添加英文字母、数字、下划线、连字符，结果全部小写，基础引用键最多64字符，同库重名自动加后缀。留空恢复默认，保存后只影响新导入及手动重新生成，不自动改动已有引用键。
-
-### 文献操作菜单
-
-插件保存的文献可在文档右上角菜单、文档标题菜单或文档树右键菜单的“插件”中直接执行“文献元数据编辑”“文献翻译本文档”“文献刷新元数据摘要”，不再经过“文献操作”子菜单。操作使用菜单对应的文档，不依赖当前激活的编辑器；普通文档不显示此子菜单。顶栏论文管理菜单不再提供这三个操作，原有命令和快捷键保留。
-
-PDF 元数据获取先解析本地前 8 页，再按 DOI/arXiv 标识符精确查询；已有精确候选时跳过 Zotero 在线识别和标题搜索。没有精确候选时，可按设置调用 Zotero 识别，最后用 Crossref 标题检索补充。同一轮识别对相同 DOI/arXiv 查询复用结果（包括失败）；服务超时、限流或返回 5xx 后，本轮不再请求该服务。主动重试创建新一轮查询，arXiv 仍遵守全局冷却和请求间隔。
-
-Citoid 使用 Wikimedia 官方的 `www.mediawiki.org/api/rest_v1/data/citation/zotero/` 入口。获取区域显示当前 PDF 页码、API 名称、查询内容及等待秒数；完成后显示可用结果，失败和无匹配原因可展开查看。联网补充失败不会丢弃本地识别结果。
