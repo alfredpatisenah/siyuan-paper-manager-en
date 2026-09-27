@@ -15,11 +15,11 @@
   ],
   "displayName": {
     "default": "Paper Manager",
-    "zh-CN": "论文管理"
+    "zh-CN": "Paper Manager"
   },
   "description": {
     "default": "Manage native-database paper libraries, import Zotero/PDF metadata, export citations, and translate papers with pdf2zh.",
-    "zh-CN": "使用思源原生数据库管理论文文献库，接收 Zotero/PDF 元数据，导出引用并通过 pdf2zh 翻译论文。"
+    "zh-CN": "Manage native-database paper libraries, import Zotero/PDF metadata, export citations, and translate papers with pdf2zh."
   },
   "readme": {
     "default": "README.md",
@@ -30,13 +30,13 @@
     "zotero",
     "paper",
     "PDF",
-    "文献",
-    "翻译",
+    "literature",
+    "translation",
     "database",
     "citation",
     "BibTeX",
     "Typst",
-    "数据库",
-    "引用"
+    "library",
+    "reference"
   ]
 }

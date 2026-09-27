@@ -69,7 +69,7 @@ export default class PaperManagerPlugin extends Plugin {
       });
     }
     this.settingsPanel = new SettingsPanel(
-      "论文管理",
+      "Paper Manager",
       () => this.settings,
       this.kernelClient,
       this.libraries,
@@ -83,7 +83,7 @@ export default class PaperManagerPlugin extends Plugin {
       if (refreshTimer) return;
       refreshTimer = setTimeout(() => {
         refreshTimer = undefined;
-        void this.refreshDocumentKinds().catch(error => console.warn("[paper-manager] 文献菜单索引刷新失败", error));
+        void this.refreshDocumentKinds().catch(error => console.warn("[paper-manager] Failed to refresh library menu index", error));
       }, 100);
     };
     this.eventBus.on("ws-main", refreshKinds);
@@ -128,7 +128,7 @@ export default class PaperManagerPlugin extends Plugin {
   private async updateSettings(next: PluginSettings): Promise<void> {
     validateCitekeyFormat(next.citekeyFormat);
     const restart = next.zoteroPort !== this.settings.zoteroPort || next.autoListen !== this.settings.autoListen;
-    if (/[,，#\r\n]/u.test(next.defaultDocumentTag)) throw new Error("默认标签请填写一个标签名，不含 #、逗号或换行；留空表示不添加");
+    if (/[,，#\r\n]/u.test(next.defaultDocumentTag)) throw new Error("Default tag must be a single tag name without #, commas, or line breaks; leave empty to disable.");
     await this.processor.runMembershipChange(async () => {
       await this.settingsStore.save(next);
       this.settings = next;
@@ -147,7 +147,6 @@ export default class PaperManagerPlugin extends Plugin {
         }
         return;
       }
-      // 已有文献库但默认库指针丢失（如设置被旧草稿覆盖）：自动认领第一个，不再打扰
       if (libraries.length) {
         await this.updateSettings({
           ...this.settings,
@@ -160,14 +159,14 @@ export default class PaperManagerPlugin extends Plugin {
         await this.updateSettings({ ...this.settings, defaultLibraryDocId: library.docId, onboardingCompleted: true });
       });
     } catch (error) {
-      showMessage(`初始化文献库失败：${errorMessage(error)}`, 7000, "error");
+      showMessage(`Failed to initialize the library: ${errorMessage(error)}`, 7000, "error");
     }
   }
 
   private async startConnector(): Promise<void> {
     if (this.connector) return;
     if (!canUseNode()) {
-      const message = "Connector 仅支持带 Node 集成的思源桌面端";
+      const message = "Connector is only supported in the SiYuan desktop client with Node integration";
       this.statusStore.update({ connector: { state: "error", message } });
       return;
     }
@@ -184,14 +183,14 @@ export default class PaperManagerPlugin extends Plugin {
               ? { state: "listening", port: status.port }
               : { state: "stopped" },
         }),
-        onProtocolError: (message) => showMessage(`Zotero Connector：${message}`, 5000, "error"),
+        onProtocolError: (message) => showMessage(`Zotero Connector: ${message}`, 5000, "error"),
       });
       await connector.start();
       this.connector = connector;
     } catch (error) {
       const message = errorMessage(error);
       this.statusStore.update({ connector: { state: "error", message } });
-      showMessage(`Connector 启动失败：${message}`, 7000, "error");
+      showMessage(`Connector failed to start: ${message}`, 7000, "error");
     }
   }
 
@@ -206,8 +205,8 @@ export default class PaperManagerPlugin extends Plugin {
   }
 
   /**
-   * 启停操作必须串行：start/stop 都有 await，若并发执行会出现「旧实例仍在关闭、
-   * 新实例已在同一端口监听」的竞态。队列化后，每次切换都在上一次结束后才开始。
+   * Start/stop operations must be serialized: both are awaited, and if they race,
+   * the old instance can still be closing while the new one begins listening on the same port.
    */
   private enqueueConnector(work: () => Promise<void>): Promise<void> {
     const next = this.connectorQueue.then(work, work);
@@ -232,11 +231,11 @@ export default class PaperManagerPlugin extends Plugin {
   private async enqueueImport(candidate: Parameters<ItemProcessor["process"]>[0]): Promise<string | undefined> {
     try {
       const result = await this.processor.process(candidate);
-      if (result.action === "cancelled") throw new Error("用户已取消导入");
-      showMessage(`论文${actionLabel(result.action)}：${result.title}`, 5000, "info");
+      if (result.action === "cancelled") throw new Error("Import cancelled by user");
+      showMessage(`Paper ${actionLabel(result.action)}: ${result.title}`, 5000, "info");
       return result.docId;
     } catch (error) {
-      showMessage(`论文导入失败：${errorMessage(error)}`, 7000, "error");
+      showMessage(`Paper import failed: ${errorMessage(error)}`, 7000, "error");
       throw error;
     }
   }
@@ -246,12 +245,12 @@ export default class PaperManagerPlugin extends Plugin {
     await openConnectorMetadataDialog(candidate, () => this.settings, async (edited) => {
       result = await this.enqueueImport(edited);
     });
-    if (!result) throw new Error("用户已取消导入");
+    if (!result) throw new Error("Import cancelled by user");
     return result;
   }
 
   private async refreshDocumentKinds(): Promise<void> {
-    const rows = await this.kernelClient.query(`SELECT b.id, a.name FROM blocks b JOIN attributes a ON a.block_id = b.id WHERE b.type = 'd' AND a.name IN ('${ATTR.libraryId}', '${ATTR.libraryData}') AND a.value != '' LIMIT 2147483647`);
+    const rows = await this.kernelClient.query(`SELECT b.id, a.name FROM blocks b JOIN attributes a ON a.block_id = b.id WHERE b.type = 'd' AND a.name IN ('${ATTR.libraryId}', '${ATTR.libraryData}')`);
     this.documentKinds.clear();
     for (const row of rows) {
       const id = String(row.id);
@@ -262,43 +261,41 @@ export default class PaperManagerPlugin extends Plugin {
 
   private async repair(docId: string): Promise<void> {
     await this.processor.repair(docId);
-    showMessage("论文元数据摘要已刷新", 4000, "info");
+    showMessage("Paper metadata summary refreshed", 4000, "info");
   }
 
   private async translateLibrary(docId: string): Promise<void> {
-    if (!this.translator) throw new Error("批量翻译仅支持思源桌面端");
+    if (!this.translator) throw new Error("Batch translation is only supported in the SiYuan desktop client");
     await openBatchTranslationDialog(this.libraries, this.translator, () => this.settings, docId);
   }
 
   private async translate(docId: string): Promise<void> {
-    if (!this.translator) throw new Error("当前环境不支持调用 pdf2zh 子进程");
-    // 识别失败时抛出带具体环节原因的错误
+    if (!this.translator) throw new Error("The current environment does not support calling the pdf2zh subprocess");
     const entry = await this.libraries.requirePaperEntry(docId);
     const paper = await this.libraries.readPaper(docId, entry);
     if (paper.translation.mono || paper.translation.dual) {
       const cleanup = this.settings.autoDeleteOldTranslations
-        ? "新版本及元数据保存成功后，插件会删除旧翻译资源。"
-        : "插件会替换元数据链接，但保留旧翻译资源。";
-      const accepted = await confirmAsync("重新翻译", `当前论文已有翻译版本。${cleanup}是否继续？`);
+        ? "The plugin deletes the old translated resources after saving the new version and metadata."
+        : "The plugin replaces the metadata link but keeps the old translation resources.";
+      const accepted = await confirmAsync("Translate again", `This paper already has a translation. ${cleanup} Continue?`);
       if (!accepted) return;
     }
     const result = await this.translator.translate(docId, this.settings);
-    const cleaned = result.deletedOldAssets.length ? `，已删除 ${result.deletedOldAssets.length} 个旧版本` : "";
-    showMessage(`翻译完成，用时 ${(result.elapsedMs / 1000).toFixed(1)} 秒${cleaned}`, 6000, "info");
+    const cleaned = result.deletedOldAssets.length ? `, deleted ${result.deletedOldAssets.length} old versions` : "";
+    showMessage(`Translation complete in ${(result.elapsedMs / 1000).toFixed(1)}s${cleaned}`, 6000, "info");
     if (result.cleanupWarnings.length) {
-      showMessage(`新翻译已保存，但有 ${result.cleanupWarnings.length} 个旧资源删除失败`, 7000, "error");
+      showMessage(`The new translation has been saved, but ${result.cleanupWarnings.length} old resources could not be deleted`, 7000, "error");
     }
   }
 
   private async selfCheck(): Promise<void> {
     const report = await buildEnvironmentReport(this.settings, this.statusStore.get());
     const rows = Object.entries(report).map(([name, result]) =>
-      `<section class="paper-manager-check-row"><div><strong>${escapeHtml(reportLabel(name))}</strong><span class="paper-manager-check-state" data-ok="${result.ok || result.skipped}">${result.skipped ? "不适用" : result.ok ? "正常" : name === "template" && this.statusStore.get().templateMode === "unknown" ? "待验证" : "需处理"}</span></div><p>${escapeHtml(result.detail)}</p></section>`).join("");
+      `<section class="paper-manager-check-row"><div><strong>${escapeHtml(reportLabel(name))}</strong><span class="paper-manager-check-state" data-ok="${result.ok || result.skipped}">${result.skipped ? "skipped" : result.ok ? "ok" : "error"}</span></div><div>${escapeHtml(result.message ?? "")}</div></section>`).join("");
     const dialog = new Dialog({
-      title: "论文管理环境自检",
+      title: "Paper Manager environment check",
       width: "680px",
-      content: `<div class="b3-dialog__content paper-manager-dialog"><div class="paper-manager-dialog-scroll paper-manager-form">${rows}
-        <p class="paper-manager-hint">元数据与阅读笔记模板已内置。</p></div><div class="paper-manager-dialog-footer"><div class="paper-manager-actions"><button class="b3-button b3-button--cancel" data-check-close>关闭</button></div></div></div>`,
+      content: `<div class="b3-dialog__content paper-manager-dialog"><div class="paper-manager-dialog-scroll paper-manager-form">${rows}<p class="paper-manager-hint">Metadata and reading-note templates are built in.</p></div><div class="paper-manager-dialog-footer"><div class="paper-manager-actions"><button class="b3-button b3-button--cancel" data-check-close>Close</button></div></div></div>`,
     });
     dialog.element.querySelector<HTMLButtonElement>("[data-check-close]")!.onclick = () => dialog.destroy();
   }
@@ -309,9 +306,10 @@ function confirmAsync(title: string, text: string): Promise<boolean> {
 }
 
 function actionLabel(action: "created" | "merged" | "copied"): string {
-  return action === "created" ? "已创建" : action === "merged" ? "已合并" : "副本已创建";
+  return action === "created" ? "created" : action === "merged" ? "merged" : "copy created";
 }
 
 function reportLabel(key: string): string {
-  return ({ desktopNode: "桌面 Node 环境", connector: "Zotero Connector", pdf2zh: "pdf2zh", template: "模板引擎" } as Record<string, string>)[key] ?? key;
+  return ({ desktopNode: "Desktop Node environment", connector: "Zotero Connector", pdf2zh: "pdf2zh", template: "Template engine" } as Record<string, string>)[key] ?? key;
 }
+

@@ -17,30 +17,30 @@ export async function openImportPdfDialog(
   let extractionController: AbortController | undefined;
   const dialog = new Dialog({
     destroyCallback: () => extractionController?.abort(),
-    title: "检索论文 / 导入 PDF",
+    title: "Search paper / import PDF",
     width: "720px",
     content: `<div class="b3-dialog__content paper-manager-import"><div class="paper-manager-import-scroll paper-manager-form">
       <section class="paper-manager-import-section">
-        <label class="paper-manager-field paper-manager-field--column"><span class="paper-manager-import-label">PDF 文件 <span class="paper-manager-import-optional">（可选）</span></span><input class="paper-manager-import-file" type="file" accept="application/pdf" data-file></label>
-        <div class="paper-manager-import-lookup"><p class="paper-manager-import-hint">可手动提取或重新联网获取元数据；自动提取及 Zotero 识别选项在插件设置中调整。</p><div data-extract-action></div></div>
+        <label class="paper-manager-field paper-manager-field--column"><span class="paper-manager-import-label">PDF file <span class="paper-manager-import-optional">(optional)</span></span><input class="b3-text-field" type="file" accept="application/pdf" data-file></label>
+        <div class="paper-manager-import-lookup"><p class="paper-manager-import-hint">You can extract metadata manually or fetch it again online; automatic extraction and Zotero recognition are configured in plugin settings.</p><div data-extract-action></div></div>
       </section>
       <section class="paper-manager-import-section">
-        <label class="paper-manager-field paper-manager-field--column"><span class="paper-manager-import-label">标识符 / 论文网址 / BibTeX</span><textarea class="b3-text-field" data-query rows="2" placeholder="粘贴 DOI、URL、arXiv、ISBN、PMID、PMCID 或 BibTeX"></textarea></label>
-        <div class="paper-manager-import-lookup"><p class="paper-manager-import-hint">检索会将标识符或网址发送给开放元数据接口；BibTeX 在本地解析。</p><div data-lookup-action></div></div>
+        <label class="paper-manager-field paper-manager-field--column"><span class="paper-manager-import-label">Identifier / paper URL / BibTeX</span><textarea class="b3-text-field" data-query rows="3" placeholder="DOI, URL, or BibTeX"></textarea></label>
+        <div class="paper-manager-import-lookup"><p class="paper-manager-import-hint">Search sends the identifier or URL to the public metadata API; BibTeX is parsed locally.</p><div data-lookup-action></div></div>
       </section>
       <section class="paper-manager-import-section paper-manager-import-results">
-      <label class="paper-manager-field paper-manager-field--column"><span class="paper-manager-import-label">识别候选</span><select class="b3-select" data-candidates disabled><option>选择 PDF 或输入标识符后开始识别</option></select></label>
-      <section class="paper-manager-paper-preview" data-preview aria-live="polite">选择 PDF 或检索论文后，在这里预览元数据。</section>
+      <label class="paper-manager-field paper-manager-field--column"><span class="paper-manager-import-label">Recognition candidates</span><select class="b3-select" data-candidates disabled><option>Select candidate…</option></select></label>
+      <section class="paper-manager-paper-preview" data-preview aria-live="polite">Select a PDF or search for a paper, then preview the metadata here.</section>
       <div class="paper-manager-import-warnings" data-warnings role="status" hidden></div>
-      <details class="paper-manager-import-editor"><summary>编辑元数据（导入时使用）</summary>
-      <div class="paper-manager-import-editor-fields">${[ ["title", "标题"], ["authors", "作者（每行一位，姓, 名）"], ["date", "日期"], ["doi", "DOI"], ["url", "URL"], ["journal", "期刊 / 会议"], ["abstract", "摘要"] ].map(([key, label]) => `<label class="paper-manager-field paper-manager-field--column" data-edit-field="${key}"><span>${label}</span><textarea class="b3-text-field" data-edit="${key}" rows="${key === "abstract" ? 4 : 2}"></textarea></label>`).join("")}</div>
+      <details class="paper-manager-import-editor"><summary>Edit metadata (used during import)</summary>
+      <div class="paper-manager-import-editor-fields">${[["title", "Title"], ["authors", "Author (one per line, Family, Given)"], ["date", "Date"], ["doi", "DOI"], ["url", "URL"], ["journal", "Journal / book"], ["publisher", "Publisher"], ["abstract", "Abstract"]].map(([key, label]) => `<label class="paper-manager-field paper-manager-field--column"><span>${label}</span><textarea class="b3-text-field" data-edit="${key}" rows="${key === "abstract" ? "4" : "2"}"></textarea></label>`).join("")}</div>
       </details>
       </section>
-      </div><div class="paper-manager-import-footer"><span class="paper-manager-import-hint">将导入当前默认论文文献库</span><div class="paper-manager-actions" data-actions></div></div>
+      </div><div class="paper-manager-import-footer"><span class="paper-manager-import-hint">This will import into the current default library</span><div class="paper-manager-actions" data-actions></div></div>
     </div>`,
   });
   const fileInput = dialog.element.querySelector<HTMLInputElement>("[data-file]")!;
-  const extractButton = button("提取元数据");
+  const extractButton = button("Extract metadata");
   extractButton.disabled = true;
   dialog.element.querySelector("[data-extract-action]")!.append(extractButton);
   const candidateSelect = dialog.element.querySelector<HTMLSelectElement>("[data-candidates]")!;
@@ -48,13 +48,13 @@ export async function openImportPdfDialog(
   const warningBox = dialog.element.querySelector<HTMLElement>("[data-warnings]")!;
   const setWarnings = (warnings: string[]) => {
     warningBox.hidden = !warnings.length;
-    warningBox.textContent = warnings.join("；");
+    warningBox.textContent = warnings.join("; ");
   };
   const query = dialog.element.querySelector<HTMLTextAreaElement>("[data-query]")!;
-  const lookupButton = button("检索 / 解析");
+  const lookupButton = button("Search / parse");
   dialog.element.querySelector("[data-lookup-action]")!.append(lookupButton);
-  const importButton = button("导入并创建", true);
-  const cancel = button("取消");
+  const importButton = button("Import and create", true);
+  const cancel = button("Cancel");
   let bytes: Uint8Array | null = null;
   let candidates: MetadataCandidate[] = [];
   let extractionRequest = 0;
@@ -87,14 +87,15 @@ export async function openImportPdfDialog(
     candidates = [];
     importButton.disabled = true;
     candidateSelect.disabled = true;
-    if (!file) { lookupButton.disabled = false; preview.textContent = "尚未选择 PDF。"; return; }
-    preview.textContent = shouldExtract ? "正在提取元数据…" : "使用文件名创建元数据页。";
+    if (!file) { lookupButton.disabled = false; preview.textContent = "No PDF selected yet."; return; }
+    preview.textContent = shouldExtract ? "Extracting metadata…" : "Creating metadata from the filename only.";
     const progress = metadataProgress(controller.signal, text => { if (request === extractionRequest) preview.textContent = text; });
     try {
       const selectedBytes = new Uint8Array(await file.arrayBuffer());
       if (request !== extractionRequest || controller.signal.aborted) return;
       bytes = selectedBytes;
-      const extractor = new MetadataExtractor({ onProgress: progress.update, enableZoteroRecognizer: settings.enableZoteroRecognizer, enableCnki: settings.enableCnki, cnkiRegion: settings.cnkiRegion, cnkiTimeoutSeconds: settings.cnkiTimeoutSeconds, signal: controller.signal });
+      const extractor = new MetadataExtractor({ onProgress: progress.update, enableZoteroRecognizer: settings.enableZoteroRecognizer, enableCnki: settings.enableCnki, cnkiRegion: settings.cnkiRegion,
+        cnkiTimeoutSeconds: settings.cnkiTimeoutSeconds });
       const result = shouldExtract
         ? await extractor.extract(selectedBytes, file.name)
         : filenameOnlyResult(file.name);
@@ -108,14 +109,14 @@ export async function openImportPdfDialog(
       warningBox.hidden = false; warningBox.innerHTML = metadataResultHtml(result);
     } catch (error) {
       if (request !== extractionRequest || controller.signal.aborted) return;
-      const title = file.name.replace(/\.pdf$/i, "") || "未命名文献";
+      const title = file.name.replace(/\.pdf$/i, "") || "Unnamed paper";
       candidates = [{
         provider: "filename",
         confidence: 0.2,
-        reason: `提取失败：${errorMessage(error)}`,
+        reason: `Extraction failed: ${errorMessage(error)}`,
         canonical: { itemType: "journalArticle", title, creators: [], tags: [] },
       }];
-      candidateSelect.innerHTML = `<option value="0">文件名兜底 · ${escapeHtml(title)}</option>`;
+      candidateSelect.innerHTML = `<option value="0">Filename fallback · ${escapeHtml(title)}</option>`;
       updatePreview();
     } finally {
       progress.stop();
@@ -126,7 +127,7 @@ export async function openImportPdfDialog(
   extractButton.addEventListener("click", () => { void extract(true); });
 
   lookupButton.addEventListener("click", async () => {
-    if (!query.value.trim()) { showMessage("请输入标识符、网址或 BibTeX"); return; }
+    if (!query.value.trim()) { showMessage("Please enter an identifier, URL, or BibTeX"); return; }
     extractionController?.abort();
     const controller = new AbortController();
     extractionController = controller;
@@ -134,7 +135,7 @@ export async function openImportPdfDialog(
     setWarnings([]);
     importButton.disabled = true;
     lookupButton.disabled = extractButton.disabled = true;
-    preview.textContent = "正在检索…";
+    preview.textContent = "Searching…";
     const progress = metadataProgress(controller.signal, text => { if (request === extractionRequest) preview.textContent = text; });
     try {
       const result = await new MetadataExtractor({ signal: controller.signal, onProgress: progress.update }).lookup(query.value);
@@ -148,7 +149,7 @@ export async function openImportPdfDialog(
     } catch (error) {
       if (request !== extractionRequest || controller.signal.aborted) return;
       updatePreview();
-      setWarnings([`检索未完成：${errorMessage(error)}。${candidates.length ? "已有候选仍可使用。" : "请重试。"}`]);
+      setWarnings([`Search incomplete: ${errorMessage(error)}.${candidates.length ? " Existing candidates remain available." : " Please retry."}`]);
     } finally {
       progress.stop();
       if (request === extractionRequest) {
@@ -164,7 +165,7 @@ export async function openImportPdfDialog(
     const file = fileInput.files?.[0];
     const selected = candidates[Number(candidateSelect.value)] ?? candidates[0];
     if (!selected || (file && !bytes)) {
-      showMessage("请先选择 PDF 并等待元数据提取完成", 4000, "error");
+      showMessage("Please choose a PDF and wait for metadata extraction to finish", 4000, "error");
       return;
     }
     const edited = { ...selected.canonical };
@@ -173,9 +174,9 @@ export async function openImportPdfDialog(
       if (key === "authors") edited.creators = parseCreatorLines(input.value);
       else Object.assign(edited, { [key]: input.value.trim() || undefined });
     });
-    if (!edited.title) { showMessage("标题不能为空", 4000, "error"); return; }
+    if (!edited.title) { showMessage("Title cannot be empty", 4000, "error"); return; }
     importButton.disabled = true;
-    importButton.textContent = "正在导入…";
+    importButton.textContent = "Importing…";
     fileInput.disabled = extractButton.disabled = lookupButton.disabled = query.disabled = true;
     try {
       const result = await processor.process({
@@ -185,12 +186,12 @@ export async function openImportPdfDialog(
         raw: selected.raw ?? { provider: selected.provider, filename: file?.name },
         attachments: file && bytes ? [{ title: file.name, mimeType: "application/pdf", bytes }] : [],
       });
-      if (result.action !== "cancelled") showMessage(`PDF 导入完成：${result.title}`, 5000, "info");
+      if (result.action !== "cancelled") showMessage(`PDF import complete: ${result.title}`, 5000, "info");
       dialog.destroy();
     } catch (error) {
-      showMessage(`PDF 导入失败：${errorMessage(error)}`, 7000, "error");
+      showMessage(`PDF import failed: ${errorMessage(error)}`, 7000, "error");
       importButton.disabled = false;
-      importButton.textContent = "导入并创建";
+      importButton.textContent = "Import and create";
       fileInput.disabled = extractButton.disabled = lookupButton.disabled = query.disabled = false;
     }
   });
@@ -198,12 +199,13 @@ export async function openImportPdfDialog(
 }
 
 function filenameOnlyResult(filename: string) {
-  const title = filename.replace(/\.pdf$/i, "").replace(/_/g, " ").trim() || "未命名文献";
+  const title = filename.replace(/\.pdf$/i, "").replace(/_/g, " ").trim() || "Unnamed paper";
   const candidate: MetadataCandidate = {
     provider: "filename",
     confidence: 0.25,
-    reason: "已关闭自动提取，使用文件名",
+    reason: "Automatic extraction is off; using filename",
     canonical: { itemType: "journalArticle", title, creators: [], tags: [] },
   };
   return { selected: candidate, candidates: [candidate], warnings: [] as string[] };
 }
+

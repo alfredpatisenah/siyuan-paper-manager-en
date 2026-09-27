@@ -15,18 +15,17 @@ interface RowState {
 
 function paperRowHtml(record: LibraryPaperRecord, state: RowState): string {
   const c = record.paper.canonical;
-  const authors = c.creators.map(author => `${author.family} ${author.given}`.trim()).join("；");
+  const authors = c.creators.map(author => `${author.family} ${author.given}`.trim()).join("; ");
   return `<article class="paper-manager-batch-row">
-    <label class="paper-manager-batch-title"><input type="checkbox" data-id="${escapeHtml(record.docId)}" ${state.selected.has(record.docId) ? "checked" : ""} ${state.blocked || state.submitting ? "disabled" : ""}>
-      <strong>${escapeHtml(c.title || record.paper.citekey || "无标题")}</strong></label>
-    <span class="paper-manager-batch-state ${state.error ? "ft__error" : "ft__on-surface"}">${escapeHtml(state.blocked || (state.error ? "翻译失败，可重试" : "可翻译"))}</span>
+    <label class="paper-manager-batch-title"><input type="checkbox" data-id="${escapeHtml(record.docId)}" ${state.selected.has(record.docId) ? "checked" : ""} ${state.blocked || state.submitting ? "disabled" : ""}><strong>${escapeHtml(c.title || record.paper.citekey || "Untitled")}</strong></label>
+    <span class="paper-manager-batch-state ${state.error ? "ft__error" : "ft__on-surface"}">${escapeHtml(state.blocked || (state.error ? "Translation failed; retry" : "Ready"))}</span>
     <div class="paper-manager-batch-info">
       <div class="ft__on-surface">${escapeHtml([authors, c.date, c.journal, record.paper.citekey].filter(Boolean).join(" · "))}</div>
-      <div class="paper-manager-batch-projects">${escapeHtml(record.projectNames.join(" / ") || "未分配项目")}${c.doi ? ` · DOI: ${escapeHtml(c.doi)}` : ""}</div>
-      <div class="paper-manager-batch-notes">备注：${escapeHtml(record.notes || "暂无备注")}</div>
-      ${c.abstract ? `<details data-abstract="${escapeHtml(record.docId)}" ${state.expanded.has(record.docId) ? "open" : ""}><summary class="ft__on-surface">查看摘要</summary><p>${escapeHtml(c.abstract)}</p></details>` : ""}
+      <div class="paper-manager-batch-projects">${escapeHtml(record.projectNames.join(" / ") || "Unassigned project")}${c.doi ? ` · DOI: ${escapeHtml(c.doi)}` : ""}</div>
+      <div class="paper-manager-batch-notes">Notes: ${escapeHtml(record.notes || "No notes")}</div>
+      ${c.abstract ? `<details data-abstract="${escapeHtml(record.docId)}" ${state.expanded.has(record.docId) ? "open" : ""}><summary class="ft__on-surface">View abstract</summary><p>${escapeHtml(c.abstract)}</p></details>` : ""}
       ${state.error ? `<div class="ft__error">${escapeHtml(state.error)}</div>` : ""}
-      <a href="siyuan://blocks/${escapeHtml(record.docId)}" class="b3-button b3-button--text">打开论文</a>
+      <a href="siyuan://blocks/${escapeHtml(record.docId)}" class="b3-button b3-button--text">Open paper</a>
     </div></article>`;
 }
 import { errorMessage } from "../../core/errors";
@@ -36,24 +35,23 @@ export async function openBatchTranslationDialog(
 ): Promise<void> {
   const library = await libraries.getLibrary(docId);
   let closed = false;
-  // Holder keeps the interval reachable from destroyCallback without a read-before-assign.
   const timer: { id?: ReturnType<typeof setInterval> } = {};
   const dialog = new Dialog({
-    title: "批量翻译未翻译论文",
+    title: "Batch-translate untranslated papers",
     width: "1040px",
     destroyCallback: () => { closed = true; if (timer.id) clearInterval(timer.id); },
     content: `<div class="b3-dialog__content paper-manager-form paper-manager-batch">
-      <div class="paper-manager-batch-heading"><strong>${escapeHtml(library.title)}</strong><span class="ft__on-surface">仅列出没有单语或双语译文的论文</span></div>
+      <div class="paper-manager-batch-heading"><strong>${escapeHtml(library.title)}</strong><span class="ft__on-surface">Only papers without a mono- or bilingual translation are listed.</span></div>
       <div class="paper-manager-batch-toolbar">
-        <label>搜索论文<input class="b3-text-field" data-search placeholder="标题、备注、作者、摘要、DOI…" type="search"></label>
-        <label>所属项目<select class="b3-select" data-project><option value="">全部项目</option></select></label>
-        <button class="b3-button b3-button--outline" data-refresh>刷新列表</button>
+        <label>Search papers<input class="b3-text-field" data-search placeholder="Title, notes, author, abstract, DOI…" type="search"></label>
+        <label>Project<select class="b3-select" data-project><option value="">All projects</option></select></label>
+        <button class="b3-button b3-button--outline" data-refresh>Refresh list</button>
       </div>
       <div class="paper-manager-batch-selection"><span data-count aria-live="polite"></span><span class="fn__flex-1"></span>
-        <button class="b3-button b3-button--text" data-select>选择当前可翻译结果</button><button class="b3-button b3-button--text" data-clear>清空选择</button></div>
+        <button class="b3-button b3-button--text" data-select>Select visible results</button><button class="b3-button b3-button--text" data-clear>Clear selection</button></div>
       <div class="paper-manager-batch-list" data-list></div>
       <div class="paper-manager-batch-footer"><span class="ft__on-surface" data-summary aria-live="polite"></span>
-        <div><button class="b3-button b3-button--cancel" data-close>关闭</button><button class="b3-button" data-submit disabled>加入翻译队列</button></div>
+        <div><button class="b3-button b3-button--cancel" data-close>Close</button><button class="b3-button" data-submit disabled>Add to queue</button></div>
       </div>
     </div>`,
   });
@@ -76,8 +74,8 @@ export async function openBatchTranslationDialog(
 
   const reason = (record: LibraryPaperRecord) => {
     const state = translator.taskState(record.docId);
-    if (state) return state === "running" ? "正在翻译" : "排队中";
-    if (outcomes.get(record.docId)?.state === "success") return "翻译完成";
+    if (state) return state === "running" ? "In progress" : "Queued";
+    if (outcomes.get(record.docId)?.state === "success") return "Completed";
     return translationBlockReason(record);
   };
   const updateCount = () => {
@@ -86,8 +84,8 @@ export async function openBatchTranslationDialog(
     for (const id of selected) if (!visibleIds.has(id)) hidden += 1;
     const pending = records.reduce((total, record) => total
       + (outcomes.get(record.docId)?.state !== "success" && !record.paper.translation.mono && !record.paper.translation.dual ? 1 : 0), 0);
-    el<HTMLElement>("[data-count]").textContent = `未翻译 ${pending} 篇 · 当前 ${visible.length} 条 · 已选 ${selected.size} 篇${hidden ? `（含筛选外 ${hidden} 篇）` : ""}`;
-    submit.textContent = submitting ? "正在加入队列…" : `加入翻译队列${selected.size ? `（${selected.size}）` : ""}`;
+    el<HTMLElement>("[data-count]").textContent = `Untranslated ${pending} · Current ${visible.length} · Selected ${selected.size}${hidden ? ` (includes ${hidden} filtered out)` : ""}`;
+    submit.textContent = submitting ? "Adding to queue…" : `Add to queue${selected.size ? ` (${selected.size})` : ""}`;
     submit.disabled = loading || submitting || !selected.size;
   };
   const render = () => {
@@ -97,8 +95,8 @@ export async function openBatchTranslationDialog(
     const expanded = new Set([...list.querySelectorAll<HTMLDetailsElement>("details[open]")].map(detail => detail.dataset.abstract));
     const scrollTop = list.scrollTop;
     list.innerHTML = visible.length
-      ? visible.map(record => paperRowHtml(record, { selected, submitting, expanded, error: outcomes.get(record.docId)?.state === "error" ? outcomes.get(record.docId)!.message : "", blocked: reason(record) })).join("")
-      : `<div class="paper-manager-batch-empty">${records.length ? "没有符合筛选条件的论文" : "没有未翻译的论文"}</div>`;
+      ? visible.map(record => paperRowHtml(record, { selected, submitting, expanded, error: outcomes.get(record.docId)?.state === "error" ? outcomes.get(record.docId)!.message : "", blocked: reason(record) }))
+      : `<div class="paper-manager-batch-empty">${records.length ? "No papers match the current filter" : "No untranslated papers"}</div>`;
     list.scrollTop = scrollTop;
     updateCount();
   };
@@ -112,7 +110,7 @@ export async function openBatchTranslationDialog(
     const version = ++loadVersion;
     outcomes.clear();
     loading = true; refresh.disabled = true; updateCount();
-    list.innerHTML = '<div class="paper-manager-batch-empty">正在读取论文、备注和翻译状态…</div>';
+    list.innerHTML = '<div class="paper-manager-batch-empty">Loading papers, notes, and translation status…</div>';
     try {
       const all = await libraries.listTranslationPapers(docId);
       if (closed || version !== loadVersion) return;
@@ -120,14 +118,14 @@ export async function openBatchTranslationDialog(
       records = all.filter(record => !record.paper.translation.mono && !record.paper.translation.dual);
       for (const id of selected) if (!records.some(record => record.docId === id)) selected.delete(id);
       const previous = project.value;
-      project.innerHTML = '<option value="">全部项目</option><option value="unassigned">未分配项目</option>' + [...new Set(records.flatMap(record => record.projectNames))].sort((a, b) => a.localeCompare(b, "zh-CN")).map(name => `<option value="project:${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+      project.innerHTML = '<option value="">All projects</option><option value="unassigned">Unassigned project</option>' + [...new Set(records.flatMap(record => record.projectNames))].sort((a, b) => a.localeCompare(b)).map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
       project.value = [...project.options].some(option => option.value === previous) ? previous : "";
-      summary.textContent = `已排除 ${translatedCount} 篇已有译文的论文。按设置最多同时翻译 ${getSettings().translationConcurrency} 篇；关闭窗口后队列继续运行。`;
+      summary.textContent = `Excluded ${translatedCount} papers that already have translations. Up to ${getSettings().translationConcurrency} papers are translated concurrently according to settings; the queue continues running after the dialog closes.`;
       loading = false; render();
     } catch (error) {
       if (closed || version !== loadVersion) return;
       records = []; visible = []; selected.clear();
-      list.textContent = `加载失败，请刷新重试：${errorMessage(error)}`;
+      list.textContent = `Load failed; please refresh and retry: ${errorMessage(error)}`;
     } finally {
       if (!closed && version === loadVersion) { loading = false; refresh.disabled = false; updateCount(); }
     }
@@ -143,8 +141,6 @@ export async function openBatchTranslationDialog(
     submitting = true; refresh.disabled = true; render();
     let queued = 0;
     let skipped = 0;
-    // Re-read every chosen paper before admission; the dialog may have been open
-    // for a while. Reads are independent, so run them together and admit in order.
     const readFailures = new Map<string, string>();
     await Promise.all(chosen.map(async record => {
       try {
@@ -156,7 +152,7 @@ export async function openBatchTranslationDialog(
       const readFailure = readFailures.get(record.docId);
       if (readFailure) {
         skipped++;
-        outcomes.set(record.docId, { state: "error", message: `入队失败：${readFailure}` });
+        outcomes.set(record.docId, { state: "error", message: `Queue failed: ${readFailure}` });
         continue;
       }
       const blocked = reason(record);
@@ -165,21 +161,20 @@ export async function openBatchTranslationDialog(
       const completion = translator.translate(record.docId, getSettings(), { untranslatedOnly: true });
       queued++; selected.delete(record.docId);
       void completion.then(() => {
-        outcomes.set(record.docId, { state: "success", message: "翻译完成" });
-        if (closed) showMessage(`翻译完成：${record.paper.canonical.title}`, 5000, "info");
+        outcomes.set(record.docId, { state: "success", message: "Translation complete" });
+        if (closed) showMessage(`Translation complete: ${record.paper.canonical.title}`, 5000, "info");
         render();
       }, (error: unknown) => {
         const message = errorMessage(error);
         outcomes.set(record.docId, { state: "error", message });
-        if (closed) showMessage(`翻译失败：${record.paper.canonical.title}：${message}`, 7000, "error");
+        if (closed) showMessage(`Translation failed: ${record.paper.canonical.title}: ${message}`, 7000, "error");
         render();
       });
     }
     submitting = false; refresh.disabled = false;
-    summary.textContent = `已加入 ${queued} 篇${skipped ? `，跳过或失败 ${skipped} 篇（请查看条目状态）` : ""}。关闭窗口后队列继续运行。`;
+    summary.textContent = `Added ${queued} papers${skipped ? `, skipped or failed ${skipped} papers (check the item state)` : ""}. The queue continues running after the dialog closes.`;
     render();
   };
-  // Update only when queue membership changes so expanded abstracts remain open.
   let queueSnapshot = "";
   timer.id = setInterval(() => {
     const next = records.map(record => translator.taskState(record.docId) ?? "").join(",");
@@ -187,3 +182,4 @@ export async function openBatchTranslationDialog(
   }, 1000);
   await load();
 }
+

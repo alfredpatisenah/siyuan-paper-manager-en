@@ -8,41 +8,41 @@ export async function openOnboardingDialog(
   kernel: KernelClient,
   libraries: LibraryService,
   onCreated: (library: PaperLibraryInfo) => Promise<void>,
-  title = "初始化论文文献库",
+  title = "Initialize paper library",
 ): Promise<void> {
   const notebooks = await kernel.listNotebooks();
-  if (!notebooks.length) throw new Error("请先在思源中新建并打开一个笔记本");
+  if (!notebooks.length) throw new Error("Create and open a notebook in SiYuan first");
   const dialog = new Dialog({
     title,
     width: "680px",
     content: `<div class="b3-dialog__content paper-manager-dialog">
-      <div class="paper-manager-dialog-scroll paper-manager-form"><p class="paper-manager-hint">文献库是一个真实文档，插件会在其中插入思源数据库；导入的论文会成为该文档的子文档。</p>
-      <label class="paper-manager-field"><span>笔记本</span><select class="b3-select" data-notebook>${notebooks.map((notebook) =>
+      <div class="paper-manager-dialog-scroll paper-manager-form"><p class="paper-manager-hint">A paper library is a real document; the plugin creates a SiYuan database inside it. Imported papers become entries in that database.</p>
+      <label class="paper-manager-field"><span>Notebook</span><select class="b3-select" data-notebook>${notebooks.map((notebook) =>
         `<option value="${escapeHtml(notebook.id)}">${escapeHtml(notebook.name)}</option>`).join("")}</select></label>
-      <label class="paper-manager-field"><span>文献库名称</span><input class="b3-text-field" data-title value="论文文献库"></label>
-      <label class="paper-manager-field"><span>文档路径</span><input class="b3-text-field" data-path value="/论文文献库"></label>
+      <label class="paper-manager-field"><span>Library name</span><input class="b3-text-field" data-title value="Paper Library"></label>
+      <label class="paper-manager-field"><span>Document path</span><input class="b3-text-field" data-path value="/Paper Library"></label>
       </div>${dialogFooter("data-actions")}
     </div>`,
   });
   const actions = dialog.element.querySelector<HTMLElement>("[data-actions]")!;
-  const cancel = button("稍后设置");
-  const create = button("创建并设为默认", true);
+  const cancel = button("Later");
+  const create = button("Create and set as default", true);
   cancel.addEventListener("click", () => dialog.destroy());
   create.addEventListener("click", async () => {
     create.disabled = true;
-    create.textContent = "正在创建数据库…";
+    create.textContent = "Creating database…";
     try {
       const notebookId = inputValue(dialog.element, "[data-notebook]");
-      const libraryTitle = inputValue(dialog.element, "[data-title]") || "论文文献库";
+      const libraryTitle = inputValue(dialog.element, "[data-title]") || "Paper Library";
       const hPath = normalizePath(inputValue(dialog.element, "[data-path]") || `/${libraryTitle}`);
       const library = await libraries.createLibrary(notebookId, hPath, libraryTitle);
       await onCreated(library);
-      showMessage("论文文献库已创建", 4000, "info");
+      showMessage("Paper library created", 4000, "info");
       dialog.destroy();
     } catch (error) {
-      showMessage(`创建文献库失败：${errorMessage(error)}`, 7000, "error");
+      showMessage(`Failed to create library: ${errorMessage(error)}`, 7000, "error");
       create.disabled = false;
-      create.textContent = "创建并设为默认";
+      create.textContent = "Create and set as default";
     }
   });
   actions.append(cancel, create);
@@ -52,3 +52,4 @@ function normalizePath(value: string): string {
   const clean = value.trim().replace(/\\/g, "/").replace(/\.{2,}/g, "").replace(/\/+$/, "");
   return clean.startsWith("/") ? clean : `/${clean}`;
 }
+
